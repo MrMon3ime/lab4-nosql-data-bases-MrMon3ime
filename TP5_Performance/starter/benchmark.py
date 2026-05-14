@@ -16,7 +16,6 @@ from cassandra.cluster import Cluster
 from cassandra.query import BatchStatement, BatchType
 from neo4j import GraphDatabase
 
-# ─── Utilitaires de mesure ────────────────────────────────────────────────────
 
 def measure_latency(fn: Callable, iterations: int = 1000) -> dict:
     """Exécuter fn iterations fois et retourner les statistiques."""
@@ -24,7 +23,7 @@ def measure_latency(fn: Callable, iterations: int = 1000) -> dict:
     for _ in range(iterations):
         start = time.perf_counter()
         fn()
-        latencies.append((time.perf_counter() - start) * 1000)  # en ms
+        latencies.append((time.perf_counter() - start) * 1000)
 
     latencies.sort()
     return {
@@ -45,7 +44,6 @@ def print_results(name: str, results: dict):
         print(f"  {k:20s}: {v:.2f}")
 
 
-# ─── Ex1 : Benchmark Écriture ─────────────────────────────────────────────────
 
 def benchmark_write_redis(n: int = 100_000):
     """Insérer n enregistrements dans Redis via pipeline pour maximiser le débit."""
@@ -62,7 +60,6 @@ def benchmark_write_redis(n: int = 100_000):
             "price": random.randint(100, 100000),
             "stock": random.randint(0, 500)
         })
-        # Exécuter le pipeline par lots de 1000
         if (i + 1) % 1000 == 0:
             pipe.execute()
             pipe = r.pipeline(transaction=False)
@@ -70,7 +67,7 @@ def benchmark_write_redis(n: int = 100_000):
 
     elapsed = time.time() - start
     throughput = n / elapsed
-    print(f"\n📝 Redis Write — {n:,} records en {elapsed:.2f}s → {throughput:,.0f} ops/s")
+    print(f"\n Redis Write — {n:,} records en {elapsed:.2f}s → {throughput:,.0f} ops/s")
     return throughput
 
 
@@ -98,7 +95,7 @@ def benchmark_write_mongodb(n: int = 100_000):
 
     elapsed = time.time() - start
     throughput = n / elapsed
-    print(f"📝 MongoDB Write — {n:,} records en {elapsed:.2f}s → {throughput:,.0f} ops/s")
+    print(f" MongoDB Write — {n:,} records en {elapsed:.2f}s → {throughput:,.0f} ops/s")
     client.close()
     return throughput
 
@@ -137,25 +134,22 @@ def benchmark_write_cassandra(n: int = 100_000):
 
     elapsed = time.time() - start
     throughput = n / elapsed
-    print(f"📝 Cassandra Write — {n:,} records en {elapsed:.2f}s → {throughput:,.0f} ops/s")
+    print(f" Cassandra Write — {n:,} records en {elapsed:.2f}s → {throughput:,.0f} ops/s")
     cluster.shutdown()
     return throughput
 
 
-# ─── Ex2 : Benchmark Lecture ─────────────────────────────────────────────────
 
 def benchmark_read_redis():
     """Point lookup, range (ZRANGE), complex (pipeline multi-get)."""
     r = redis.Redis(host='localhost', port=6379, decode_responses=True)
 
-    # Point lookup
     def point_lookup():
         r.hgetall(f"bench:product:{random.randint(0, 99999)}")
 
     res_point = measure_latency(point_lookup, 1000)
     print_results("Redis — Point Lookup (HGETALL)", res_point)
 
-    # Pipeline multi-get (10 clés en une fois)
     def multi_get():
         pipe = r.pipeline()
         for _ in range(10):
@@ -171,24 +165,20 @@ def benchmark_read_mongodb():
     client = MongoClient("mongodb://admin:admin123@localhost:27017/")
     db = client["benchmark"]
 
-    # Créer un index pour les lectures
     db.products.create_index("price")
 
-    # find_one par _id
     def find_one():
         db.products.find_one({"_id": random.randint(0, 99999)})
 
     res_find = measure_latency(find_one, 1000)
     print_results("MongoDB — find_one (par _id)", res_find)
 
-    # find avec range (index sur price)
     def find_range():
         list(db.products.find({"price": {"$gte": 10000, "$lte": 50000}}).limit(10))
 
     res_range = measure_latency(find_range, 500)
     print_results("MongoDB — find range (price)", res_range)
 
-    # Aggregation pipeline
     def aggregate():
         list(db.products.aggregate([
             {"$group": {"_id": "$category", "avg_price": {"$avg": "$price"}, "count": {"$sum": 1}}}
@@ -199,7 +189,6 @@ def benchmark_read_mongodb():
     client.close()
 
 
-# ─── Ex3 : Charge concurrente ─────────────────────────────────────────────────
 
 def benchmark_concurrent(db_fn: Callable, n_clients: int = 50, requests_per_client: int = 200):
     """
@@ -229,7 +218,7 @@ def benchmark_concurrent(db_fn: Callable, n_clients: int = 50, requests_per_clie
 
     all_latencies.sort()
     total_requests = n_clients * requests_per_client
-    print(f"\n⚡ Charge Concurrente ({n_clients} clients × {requests_per_client} req)")
+    print(f"\n Charge Concurrente ({n_clients} clients × {requests_per_client} req)")
     print(f"  Total requêtes  : {total_requests:,}")
     print(f"  Durée totale    : {elapsed:.2f}s")
     print(f"  Throughput      : {total_requests/elapsed:,.0f} req/s")
@@ -238,24 +227,23 @@ def benchmark_concurrent(db_fn: Callable, n_clients: int = 50, requests_per_clie
     print(f"  Latence p99     : {all_latencies[int(0.99*len(all_latencies))]:.2f}ms")
 
 
-# ─── Main ─────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    print("🚀 Benchmark NoSQL - Comparatif des 4 technologies")
+    print(" Benchmark NoSQL - Comparatif des 4 technologies")
     print("="*60)
 
-    N = 10_000  # Réduire pour les tests, 100_000 pour la production
+    N = 10_000  
 
-    print(f"\n📝 Benchmark Écriture ({N:,} enregistrements)")
+    print(f"\n Benchmark Écriture ({N:,} enregistrements)")
     benchmark_write_redis(N)
     benchmark_write_mongodb(N)
     benchmark_write_cassandra(N)
 
-    print(f"\n📖 Benchmark Lecture (1,000 requêtes)")
+    print(f"\n Benchmark Lecture (1,000 requêtes)")
     benchmark_read_redis()
     benchmark_read_mongodb()
 
-    print(f"\n⚡ Test Charge Concurrente (50 clients × Redis)")
+    print(f"\n Test Charge Concurrente (50 clients × Redis)")
     r = redis.Redis(host='localhost', port=6379, decode_responses=True)
     benchmark_concurrent(
         lambda: r.hgetall(f"bench:product:{random.randint(0, N-1)}"),
