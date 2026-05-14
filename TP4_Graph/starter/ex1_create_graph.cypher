@@ -2,12 +2,10 @@
 // Effacer la base pour partir propre
 MATCH (n) DETACH DELETE n;
 
-// ─── 1.1 : Contraintes d'unicité ─────────────────────────────────────────────
 CREATE CONSTRAINT etudiant_id IF NOT EXISTS FOR (e:Etudiant) REQUIRE e.id IS UNIQUE;
 CREATE CONSTRAINT cours_code IF NOT EXISTS FOR (c:Cours) REQUIRE c.code IS UNIQUE;
 CREATE CONSTRAINT competence_nom IF NOT EXISTS FOR (c:Competence) REQUIRE c.nom IS UNIQUE;
 
-// ─── 1.2 : Créer les compétences ──────────────────────────────────────────────
 UNWIND [
   {nom: "Python", categorie: "Programmation"},
   {nom: "Java", categorie: "Programmation"},
@@ -22,7 +20,6 @@ UNWIND [
 ] AS comp
 MERGE (:Competence {nom: comp.nom, categorie: comp.categorie});
 
-// ─── 1.3 : Créer les cours ────────────────────────────────────────────────────
 UNWIND [
   {code: "INFO401", intitule: "Bases de Données Avancées", credits: 6, dept: "Informatique"},
   {code: "INFO402", intitule: "Intelligence Artificielle", credits: 6, dept: "Informatique"},
@@ -33,7 +30,6 @@ UNWIND [
 MERGE (:Cours {code: cours.code, intitule: cours.intitule,
                credits: cours.credits, departement: cours.dept});
 
-// ─── 1.4 : Créer 50 étudiants avec données algériennes ────────────────────────
 UNWIND [
   {id:"E001", prenom:"Ahmed",    nom:"Bensalem",    universite:"USTHB", filiere:"Informatique",    annee:3, ville:"Alger"},
   {id:"E002", prenom:"Fatima",   nom:"Ouali",        universite:"USTHB", filiere:"Informatique",    annee:3, ville:"Alger"},
@@ -89,9 +85,6 @@ UNWIND [
 MERGE (e:Etudiant {id: data.id})
 SET e += data;
 
-// ─── 1.5 : Relations CONNAIT entre étudiants ──────────────────────────────────
-// Graphe connexe : chaîne principale + connexions inter-universités
-
 UNWIND [
   ["E001","E002"], ["E001","E007"], ["E001","E011"], ["E001","E015"], ["E001","E020"],
   ["E002","E003"], ["E002","E009"], ["E002","E016"], ["E003","E004"], ["E003","E021"],
@@ -112,7 +105,6 @@ UNWIND [
 MATCH (a:Etudiant {id: pair[0]}), (b:Etudiant {id: pair[1]})
 MERGE (a)-[:CONNAIT]-(b);
 
-// ─── Relations SUIT (étudiant → cours) avec notes ─────────────────────────────
 UNWIND [
   {eid:"E001", code:"INFO401", note:16.5}, {eid:"E001", code:"INFO402", note:14.0},
   {eid:"E002", code:"INFO401", note:18.0}, {eid:"E002", code:"INFO403", note:15.5},
@@ -134,7 +126,6 @@ UNWIND [
 MATCH (e:Etudiant {id: rel.eid}), (c:Cours {code: rel.code})
 MERGE (e)-[:SUIT {note: rel.note, annee_academique: "2023-2024"}]->(c);
 
-// ─── Relations MAITRISE (étudiant → compétence) ────────────────────────────────
 UNWIND [
   {eid:"E001", comp:"Python",         niveau:4}, {eid:"E001", comp:"SQL",            niveau:5},
   {eid:"E001", comp:"NoSQL",          niveau:3}, {eid:"E002", comp:"Python",         niveau:5},
@@ -156,7 +147,6 @@ UNWIND [
 MATCH (e:Etudiant {id: rel.eid}), (c:Competence {nom: rel.comp})
 MERGE (e)-[:MAITRISE {niveau: rel.niveau}]->(c);
 
-// ─── Prérequis entre cours et compétences ────────────────────────────────────
 MATCH (c1:Cours {code:"INFO401"}), (comp:Competence {nom:"SQL"})
 MERGE (c1)-[:REQUIERT]->(comp);
 MATCH (c2:Cours {code:"INFO402"}), (comp:Competence {nom:"Machine Learning"})
@@ -172,6 +162,5 @@ MERGE (c4)-[:REQUIERT]->(comp);
 MATCH (c5:Cours {code:"INFO405"}), (comp:Competence {nom:"Docker"})
 MERGE (c5)-[:REQUIERT]->(comp);
 
-// Vérification finale
 MATCH (n) RETURN labels(n)[0] AS type, count(n) AS total ORDER BY total DESC;
 MATCH ()-[r]->() RETURN type(r) AS relation, count(r) AS total ORDER BY total DESC;
