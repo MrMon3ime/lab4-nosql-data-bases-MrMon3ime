@@ -2,9 +2,9 @@
 // Prérequis : Plugin Graph Data Science installé (inclus dans docker-compose)
 
 // ─── 3.1 : Plus court chemin ──────────────────────────────────────────────────
-// "Comment Ahmed peut-il rencontrer Yasmina ?"
+// "Comment Ahmed peut-il rencontrer Zineb ?"
 MATCH p = shortestPath(
-  (a:Etudiant {prenom: "Ahmed"})-[:CONNAIT*..10]-(b:Etudiant {prenom: "Yasmina"})
+  (a:Etudiant {prenom: "Ahmed"})-[:CONNAIT*..10]-(b:Etudiant {prenom: "Zineb"})
 )
 RETURN [n IN nodes(p) | n.prenom + " (" + n.universite + ")"] AS chemin,
        length(p) AS nb_intermediaires;
@@ -18,7 +18,7 @@ CALL gds.graph.project(
   'CONNAIT'
 );
 
-// TODO: Calculer et afficher le top 10 des étudiants les plus connectés
+// Top 10 des étudiants les plus connectés
 CALL gds.degree.stream('reseau_social')
 YIELD nodeId, score
 RETURN gds.util.asNode(nodeId).prenom AS etudiant,
@@ -29,7 +29,6 @@ LIMIT 10;
 
 
 // ─── 3.3 : Détection de communautés (Louvain) ────────────────────────────────
-// TODO: Exécuter l'algorithme de Louvain et afficher les communautés
 CALL gds.louvain.stream('reseau_social')
 YIELD nodeId, communityId
 WITH communityId, collect(gds.util.asNode(nodeId).prenom) AS membres
@@ -40,14 +39,33 @@ ORDER BY taille DESC;
 
 
 // ─── 3.4 : Recommandation de contacts ────────────────────────────────────────
-// "Qui Ahmed devrait-il connaître ?" 
-// Critères : amis en commun + même cours + même filière
-
-// TODO: Écrire la requête de recommandation
+// "Qui Ahmed devrait-il connaître ?"
 // Score = nb_amis_communs * 3 + nb_cours_communs * 2 + (meme_filiere ? 1 : 0)
 MATCH (moi:Etudiant {prenom: "Ahmed"})
-// TODO: Compléter la requête
-RETURN ??? AS suggestion, ??? AS score
+
+// Candidats : pas encore connus, pas Ahmed lui-même
+MATCH (candidat:Etudiant)
+WHERE candidat <> moi
+  AND NOT (moi)-[:CONNAIT]-(candidat)
+
+// Amis en commun
+OPTIONAL MATCH (moi)-[:CONNAIT]-(:Etudiant)-[:CONNAIT]-(candidat)
+WITH moi, candidat, count(DISTINCT candidat) AS nb_amis_communs
+
+// Cours en commun
+OPTIONAL MATCH (moi)-[:SUIT]->(c:Cours)<-[:SUIT]-(candidat)
+WITH moi, candidat, nb_amis_communs, count(DISTINCT c) AS nb_cours_communs
+
+// Calculer le score total
+WITH candidat,
+     nb_amis_communs * 3 + nb_cours_communs * 2 +
+       CASE WHEN candidat.filiere = moi.filiere THEN 1 ELSE 0 END AS score,
+     nb_amis_communs, nb_cours_communs
+
+WHERE score > 0
+RETURN candidat.prenom + " " + candidat.nom AS suggestion,
+       candidat.universite AS universite,
+       nb_amis_communs, nb_cours_communs, score
 ORDER BY score DESC
 LIMIT 5;
 
@@ -55,10 +73,10 @@ LIMIT 5;
 // ─── 3.5 : Chemin de compétences ─────────────────────────────────────────────
 // "Quels cours mènent à Machine Learning ?"
 MATCH path = (debut:Cours)-[:REQUIERT*]->(but:Competence {nom: "Machine Learning"})
-RETURN [n IN nodes(path) | 
+RETURN [n IN nodes(path) |
   CASE WHEN n:Cours THEN n.intitule ELSE n.nom END
 ] AS parcours_apprentissage;
 
 
-// Nettoyage
+// Nettoyage de la projection mémoire
 CALL gds.graph.drop('reseau_social');
