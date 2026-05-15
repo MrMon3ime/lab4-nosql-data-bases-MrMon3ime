@@ -5,7 +5,6 @@
 
 use("medical_db");
 
-// ─── 3.1 : Distribution des diagnostics par wilaya ────────────────────────────
 print("=== 3.1 : Top diagnostics par wilaya ===");
 
 const diagParWilaya = db.patients.aggregate([
@@ -20,7 +19,6 @@ const diagParWilaya = db.patients.aggregate([
 
 printjson(diagParWilaya);
 
-// ─── 3.2 : Médicament le plus prescrit par spécialité ─────────────────────────
 print("\n=== 3.2 : Top médicaments par spécialité ===");
 
 const medsParSpecialite = db.patients.aggregate([
@@ -44,7 +42,6 @@ const medsParSpecialite = db.patients.aggregate([
 
 printjson(medsParSpecialite);
 
-// ─── 3.3 : Évolution mensuelle des consultations ──────────────────────────────
 print("\n=== 3.3 : Consultations par mois (12 derniers mois) ===");
 
 const evolutionMensuelle = db.patients.aggregate([
@@ -76,7 +73,6 @@ const evolutionMensuelle = db.patients.aggregate([
 
 printjson(evolutionMensuelle);
 
-// ─── 3.4 : Patients à risque multiple ────────────────────────────────────────
 print("\n=== 3.4 : Profil patients à risque élevé ===");
 
 const patientsRisque = db.patients.aggregate([
@@ -112,7 +108,6 @@ const patientsRisque = db.patients.aggregate([
 
 printjson(patientsRisque);
 
-// ─── 3.5 : Rapport médecins ───────────────────────────────────────────────────
 print("\n=== 3.5 : Top 5 médecins & taux de ré-consultation ===");
 
 const rapportMedecins = db.patients.aggregate([
