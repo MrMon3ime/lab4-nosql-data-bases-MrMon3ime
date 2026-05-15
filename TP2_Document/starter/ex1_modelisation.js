@@ -5,7 +5,6 @@
 
 use("medical_db");
 
-// ─── 1.1 : Créer la collection avec validation ────────────────────────────────
 db.createCollection("patients", {
   validator: {
     $jsonSchema: {
@@ -33,7 +32,6 @@ db.createCollection("patients", {
   }
 });
 
-// ─── 1.2 : Insérer 20 patients avec données algériennes ──────────────────────
 const patients = [
   {
     cin: "198001012300", nom: "Bensalem", prenom: "Ahmed",
@@ -314,7 +312,6 @@ const patients = [
 
 db.patients.insertMany(patients);
 
-// ─── 1.3 : Collection analyses (référencée) ───────────────────────────────────
 const p1 = db.patients.findOne({ cin: "198001012300" })._id;
 const p2 = db.patients.findOne({ cin: "199503154400" })._id;
 const p3 = db.patients.findOne({ cin: "197812285500" })._id;
@@ -333,5 +330,5 @@ const analyses = [
 
 db.analyses.insertMany(analyses);
 
-print("✅ Modélisation terminée. Patients insérés:", db.patients.countDocuments());
-print("✅ Analyses insérées:", db.analyses.countDocuments());
+print(" Modélisation terminée. Patients insérés:", db.patients.countDocuments());
+print(" Analyses insérées:", db.analyses.countDocuments());
