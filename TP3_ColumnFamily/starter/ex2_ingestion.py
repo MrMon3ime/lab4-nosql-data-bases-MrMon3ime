@@ -9,7 +9,6 @@ import random
 from datetime import datetime, timedelta
 import time
 
-# Configuration
 CASSANDRA_HOST = 'localhost'
 KEYSPACE = 'smartgrid'
 NB_CAPTEURS = 10000
@@ -21,10 +20,10 @@ COMMUNES = {
     "Oran": ["Bir El Djir", "Es Senia", "Arzew"],
     "Constantine": ["El Khroub", "Ain Smara", "Hamma Bouziane"],
     "Annaba": ["El Bouni", "El Hadjar", "Seraidi"],
-    "Blida": ["Bougara", "Boufarik", "Larbaa"],
+    "Blida": ["Bougara", "Boufarik", "Meftah"],
 }
 
-BATCH_SIZE = 50  # Bonne pratique Cassandra : batches de 50 max
+BATCH_SIZE = 50
 
 
 def connect():
@@ -36,7 +35,7 @@ def connect():
 
 def generate_mesure(capteur_id, wilaya, commune, timestamp):
     """Générer une mesure réaliste pour un capteur"""
-    tension_base = 220  # Volts (réseau algérien)
+    tension_base = 220 
     alerte = random.random() < 0.05
     code_alerte = None
     if alerte:
@@ -90,8 +89,6 @@ def insert_batch(session, mesures: list):
            alerte, code_alerte)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """)
-
-    # Découper en sous-batches de BATCH_SIZE
     for i in range(0, len(mesures), BATCH_SIZE):
         chunk = mesures[i:i + BATCH_SIZE]
         batch = BatchStatement(batch_type=BatchType.UNLOGGED)
@@ -113,7 +110,6 @@ def run_ingestion(session):
     print(f"Démarrage ingestion : {NB_CAPTEURS} capteurs × {MINUTES_HISTORIQUE} min")
     start = time.time()
 
-    # 1. Générer les capteurs avec leur localisation fixe
     capteurs = []
     for _ in range(NB_CAPTEURS):
         wilaya = random.choice(WILAYAS)
@@ -124,7 +120,6 @@ def run_ingestion(session):
             "commune": commune
         })
 
-    # 2. Pour chaque minute des MINUTES_HISTORIQUE dernières minutes
     now = datetime.utcnow()
     total_inseres = 0
 
