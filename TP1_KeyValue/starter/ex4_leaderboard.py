@@ -38,7 +38,6 @@ def get_products_between_ranks(r, start_rank: int, end_rank: int) -> list:
     Retourner les produits entre les rangs start et end (1-based).
     Ex: rangs 3 à 7 → 5 produits
     """
-    # Convertir en 0-based pour Redis
     results = r.zrevrange(LEADERBOARD_KEY, start_rank - 1, end_rank - 1, withscores=True)
     return [{"product_id": product_id, "sales": score} for product_id, score in results]
 
@@ -59,7 +58,7 @@ if __name__ == "__main__":
     print("Simulation de ventes...")
     simulate_sales_day(r, 500)
 
-    print("\n🏆 Top 5 produits:")
+    print("\n Top 5 produits:")
     for i, p in enumerate(get_top_products(r, 5), 1):
         print(f"  {i}. Produit #{p['product_id']} — {int(p['sales'])} ventes")
 
