@@ -39,7 +39,6 @@ def get_product_cached(r, product_id: int, ttl: int = 600) -> Optional[dict]:
         print(f"  CACHE HIT  — {elapsed:.1f}ms")
         return json.loads(cached)
 
-    # Cache MISS : requête vers la base lente
     product = slow_db_get_product(product_id)
     elapsed = (time.time() - start) * 1000
 
@@ -61,7 +60,6 @@ def benchmark_cache(r, product_id: int, iterations: int = 20):
     Afficher le temps moyen HIT, MISS et le taux de cache hit.
     """
     hit_times, miss_times = [], []
-    # On s'assure que le cache est vide au départ
     r.delete(f"product_cache:{product_id}")
 
     for i in range(iterations):
